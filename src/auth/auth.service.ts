@@ -1,10 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
 import { PrismaService } from 'prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { JwtService, TokenExpiredError } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { MailerService} from '@nestjs-modules/mailer';
+import { CreateAuthGoogleDto } from './dto/create-auth-google.dto';
+import { EmailAuthDto } from './dto/email-auth.dto';
+import { v4 as uuidv4 } from 'uuid';
+
 
 
 
@@ -54,6 +57,7 @@ export class AuthService {
   
       const created = await this.prisma.user.create({
         data: {
+          id : uuidv4(),
           name,
           email,
           password : hashedPassword ,
@@ -93,15 +97,21 @@ if (mail) {
 }
 }
 
-
 async activateAccount(token: string) {
+  let user;
+
   try {
-    const decodedToken = this.jwtService.verify(token);
+    console.log(token);
+    const decodedToken = await this.jwtService.verifyAsync(token);
+    console.log(decodedToken);
 
     const userId = decodedToken.userId;
-    const user = await this.prisma.user.findUnique({
+    console.log(userId);
+
+    user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
+    console.log(user);
 
     if (!user) {
       throw new BadRequestException('User not found.');
@@ -111,31 +121,90 @@ async activateAccount(token: string) {
       throw new BadRequestException('Account already active.');
     }
 
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-
-    if (decodedToken.exp && decodedToken.exp < currentTimestamp) {
-      const newToken = await this.generateToken(user);
-      await this.sendActivationEmail(user.email, newToken);
-      
-      throw new BadRequestException('Token expired. A new activation email has been sent.');
-    }
-
-    await this.prisma.user.update({
+    const activated = await this.prisma.user.update({
       where: { id: userId },
       data: { isActive: true },
     });
 
-    return { message: 'Account activated successfully.' };
+    if (activated) {
+      return { message: 'Account activated successfully.' };
+    }
   } catch (error) {
     if (error instanceof TokenExpiredError) {
       throw new BadRequestException('Token expired. A new activation email has been sent.');
-    } else {
+    } else if (error instanceof JsonWebTokenError) {
       throw new BadRequestException('Invalid activation token.');
+    } else {
+      throw new BadRequestException('An error occurred during activation.');
     }
   }
 }
 
-
+async sendBackMailConfirmation(emailDto: EmailAuthDto){
+ 
+  const fondUser = await this.prisma.user.findUnique({where : {email : emailDto.email}} );
+  if (!fondUser){
+    throw new BadRequestException('Invalid mail');
+  }
+  
+  if(fondUser.isActive){
+    throw new BadRequestException('Account already active.');
 
   }
+  if(!fondUser.isActive){
+    const token = await this.generateToken(fondUser);
+      await this.sendActivationEmail(fondUser.email, token);
+      return { message: ' Activation email sent Successfully.' };
+
+  }
+  else{
+    return { message: ' an error occurred while sending mail.' };
+
+  }
+  }
+
+
+
+
+
+
+
+
+
+async googleLogin(req){
+  if (!req.user) {
+    return 'No user from google'
+  }
+  return {
+    message: 'User Info from Google',
+    user: req.user
+  }}
+  
+async googleredirect(){
+  return 'user redirected successfully '
+
+}
+
+async validateUser(authGoogle: CreateAuthGoogleDto) {
+  console.log('AuthService');
+  console.log(authGoogle);
+  const user = await this.prisma.userGoogle.findUnique({
+    where: {
+      email: authGoogle.email,
+    },
+  });
+    console.log(user);
+  if (user) return user;
+  console.log('User not found. Creating...');
+  const newUser = this.prisma.userGoogle.create({
+    data: {
+      id :authGoogle.id,
+      name : authGoogle.name,
+      email: authGoogle.email
+    },
+  });
+  return newUser;
+}
+
+}
 

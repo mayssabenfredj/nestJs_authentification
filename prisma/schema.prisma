@@ -11,9 +11,15 @@ datasource db {
 }
 
 model User {
-  id    Int     @default(autoincrement()) @id
+  id String   @id @unique
   email String  @unique
   name  String
   password String
   isActive  Boolean  @default(false)
+}
+
+model UserGoogle {
+  id String   @id @unique
+  email String  @unique
+  name  String
 }

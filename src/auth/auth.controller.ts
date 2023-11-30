@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { AuthGuard } from '@nestjs/passport'
@@ -6,6 +6,7 @@ import { AuthGuard } from '@nestjs/passport'
 
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { EmailAuthDto } from './dto/email-auth.dto';
+import { LoginAuthDto } from './dto/login-auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -40,5 +41,21 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   googleredirect(){
     return this.authService.googleredirect()
+  }
+
+
+  @Post('signin')
+  signin(@Body() loginAuthDto: LoginAuthDto, @Res({passthrough:true}) res) {
+    return this.authService.signin(loginAuthDto,res);
+  }
+
+  @Get('user')
+  GetUser(@Req() req ) {
+    return this.authService.GetUser(req);
+  }
+
+  @Get('signout')
+  signout(@Res() res) {
+    return this.authService.signout(res);
   }
 }

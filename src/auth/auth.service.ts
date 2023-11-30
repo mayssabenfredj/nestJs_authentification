@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { PrismaService } from 'prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -7,6 +7,8 @@ import { MailerService} from '@nestjs-modules/mailer';
 import { CreateAuthGoogleDto } from './dto/create-auth-google.dto';
 import { EmailAuthDto } from './dto/email-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { LoginAuthDto } from './dto/login-auth.dto';
+import { Request, Response } from 'express';
 
 
 
@@ -18,6 +20,47 @@ export class AuthService {
      private mailService : MailerService
     ){}
 
+
+    /******Sign up Methode *********** */
+    async signup(createAuthDto: CreateAuthDto) {
+      const { email,name , password} = createAuthDto;
+     
+      const userExists = await this.findByEmail(email) ;
+      if (userExists) {
+        throw new BadRequestException('User already exists with this email address.');
+      }
+    
+      const hashedPassword = await this.hashPassword(password);
+      console.log(hashedPassword);
+    
+        const created = await this.prisma.user.create({
+          data: {
+            id : uuidv4(),
+            name,
+            email,
+            password : hashedPassword ,
+           
+          }
+        });
+    
+    
+      if (created) {
+        const token = await this.generateToken(created);
+        await this.sendActivationEmail(email, token);
+  
+        return { message: 'User created. Activation email sent.' };
+        
+    }
+  }
+  
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+    });
+  }
+
+
+  /********* encrypt and decrypt password ******* */
   async hashPassword(password : string){
     const saltOrRounds=10;
     return await bcrypt.hash(password,saltOrRounds);
@@ -28,58 +71,16 @@ export class AuthService {
 
   }
 
-  private isValidEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
+
+  /**********Generate Token ******** */
+
   async generateToken(user: any) {
     const payload = { userId: user.id, email: user.email };
     return this.jwtService.sign(payload); 
   }
   
-  async signup(createAuthDto: CreateAuthDto) {
-    const { email,name , password} = createAuthDto;
-    if (!createAuthDto.email || !createAuthDto.name || !createAuthDto.password) {
-      throw new BadRequestException('Email, name, and password are required.');
-    }
 
-    if (!this.isValidEmail(createAuthDto.email)) {
-      throw new BadRequestException('Invalid email address.');
-    }
-  
-    const userExists = await this.findByEmail(email) ;
-    if (userExists) {
-      throw new BadRequestException('User already exists with this email address.');
-    }
-  
-    const hashedPassword = await this.hashPassword(password);
-    console.log(hashedPassword);
-  
-      const created = await this.prisma.user.create({
-        data: {
-          id : uuidv4(),
-          name,
-          email,
-          password : hashedPassword ,
-         
-        }
-      });
-  
-  
-    if (created) {
-      const token = await this.generateToken(created);
-      await this.sendActivationEmail(email, token);
-
-      return { message: 'User created. Activation email sent.' };
-      
-  }
-}
-
-async findByEmail(email: string) {
-  return this.prisma.user.findUnique({
-    where: { email },
-  });
-}
+  /*********** Activation Account ********* */
 
 async sendActivationEmail(email: string, token: string) {
   const url = `http://localhost:3000/auth/activate/${token}`;
@@ -163,14 +164,7 @@ async sendBackMailConfirmation(emailDto: EmailAuthDto){
   }
   }
 
-
-
-
-
-
-
-
-
+/******Google Authentification  ***** */
 async googleLogin(req){
   if (!req.user) {
     return 'No user from google'
@@ -206,5 +200,68 @@ async validateUser(authGoogle: CreateAuthGoogleDto) {
   return newUser;
 }
 
+
+/************Sign in *********** */
+async signin(loginAuthDto :LoginAuthDto, res : Response) {
+  const {email,password}= loginAuthDto
+  const fondUser=await this.prisma.user.findUnique({where: {email}})
+  if(!fondUser){
+    throw new BadRequestException("Please check your information and try again")
+  }
+  const isMatch =await this.comparePassword({
+    password,
+    hash:fondUser.password
+  });
+  if(!isMatch){
+    throw new BadRequestException("Please check your information and try again")
+  }
+
+  if(!fondUser.isActive ){
+    throw new UnauthorizedException("Check your mail for Account Verfication please")
+   
+  }
+  
+  
+  const token = await this.jwtService.signAsync({id:fondUser.id})
+  if (!token){
+    throw new ForbiddenException()
+    
+  }     
+  
+    res.cookie('token',token)
+    
+ 
+ const jwt = { token: token};
+   return  jwt;
+
+
+}
+
+/***************Verfiy User Connected ******* */
+
+async GetUser(req : Request) {
+    
+  const cookie = req.cookies['token'];
+  if(!cookie){
+    throw new UnauthorizedException("You are not loggged in");
+  }
+const data = await this.jwtService.verifyAsync(cookie);
+
+if(!data){
+  throw new UnauthorizedException();
+}
+const user = await this.prisma.user.findUnique({where : {id : data['id']}} );
+
+return {message : "hello "+user.name +" you are logged in"};
+}
+
+
+
+
+/**********************Sign out ********* */
+signout( res : Response) {
+  res.clearCookie('token');
+  return res.send({message:'Logged out succefully'});
+}
 }
 

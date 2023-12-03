@@ -12,7 +12,13 @@ The Authentication Module is responsible for handling user authentication, accou
 ```bash
 $ npm install
 ```
+## Prisma ORM Integration
 
+The Authentication Module leverages Prisma as its Object-Relational Mapping (ORM) tool for seamless database interactions. Ensure you have Prisma properly configured in your NestJS application. 
+- **npx prisma generate :** This command generates TypeScript typings based on your Prisma Schema, making it easier to interact with the database in your NestJS application.
+- **npx prisma migrate dev --name init :** This command creates a new migration with the name init and applies it to the database. Ensure that you run this command whenever there are changes to your database schema.
+- **npx prisma studio :** Prisma Studio will open in your default web browser, providing a visual representation of your database tables and relationships.
+- 
 ## Running the app
 
 ```bash

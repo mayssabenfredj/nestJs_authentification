@@ -9,6 +9,7 @@ import { EmailAuthDto } from './dto/email-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { Request, Response } from 'express';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 
 
@@ -22,7 +23,7 @@ export class AuthService {
 
 
     /******Sign up Methode *********** */
-    async signup(createAuthDto: CreateAuthDto) {
+    async signup(createAuthDto: CreateAuthDto)  {
       const { email,name , password} = createAuthDto;
      
       const userExists = await this.findByEmail(email) ;
@@ -263,5 +264,64 @@ signout( res : Response) {
   res.clearCookie('token');
   return res.send({message:'Logged out succefully'});
 }
+
+/***************** Fotgot Password  */
+async sendResetMail(toemail: string , token : string) {
+    
+  const mail = await this.mailService.sendMail({
+    to: toemail,
+      from:"azerq2023@outlook.fr",
+      subject: "Reset Password",
+      html:"<h1>Reset Password</h1> <h2>Welcome</h2><p>To reset your password, please click on this link</p><a href=http://localhost:3000/auth/resetpassword/"
+      +token+">Click this </a>"
+     
+      
+      
+  });
+  if (mail){
+    return {message:"mail sent successfuly"} ; 
+  }
+  else {
+    return {message : "an error occurred while sending mail" } ; 
+  }
+}
+
+async forgot(emailDto: EmailAuthDto){
+  const fondUser=await this.prisma.user.findUnique({where: {email : emailDto.email}})
+  
+  if (!fondUser){
+    throw new BadRequestException('Invalid mail');
+  }
+  const token =  await this.generateToken(fondUser);
+  return await this.sendResetMail(emailDto.email,token);
+}
+
+async resetPassword(token : string ,resetPassword: ResetPasswordDto) {
+  const decodedToken = await this.jwtService.verifyAsync(token);
+    console.log(decodedToken);
+
+    const userId = decodedToken.userId;
+  const foundUser = await this.prisma.user.findFirst({ where: { id: userId } });
+  if (!foundUser) {
+    return {message : "User does not exist" };
+  }
+
+  const hashedPassword = await this.hashPassword(resetPassword.password);
+
+  const passwordReset = await this.prisma.user.update({
+    where: {
+      id: foundUser.id,
+    },
+    data: {
+      password: hashedPassword,
+    }
+  });
+ 
+  if (!passwordReset) {
+    return { message: "Error" };
+  }
+  return { message: "Your Password Has been Reset Successfully" };
+}
+
 }
 

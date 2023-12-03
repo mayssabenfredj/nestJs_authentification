@@ -1,37 +1,24 @@
+# Authentication Module Documentation
+
+## Overview
+
+The Authentication Module is responsible for handling user authentication, account activation, Google authentication, and password-related functionalities in a NestJS application.
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
 </p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## Installation
 
 ```bash
 $ npm install
 ```
+## Prisma ORM Integration
 
+The Authentication Module leverages Prisma as its Object-Relational Mapping (ORM) tool for seamless database interactions. Ensure you have Prisma properly configured in your NestJS application. 
+- **npx prisma generate :** This command generates TypeScript typings based on your Prisma Schema, making it easier to interact with the database in your NestJS application.
+- **npx prisma migrate dev --name init :** This command creates a new migration with the name init and applies it to the database. Ensure that you run this command whenever there are changes to your database schema.
+- **npx prisma studio :** Prisma Studio will open in your default web browser, providing a visual representation of your database tables and relationships.
+- 
 ## Running the app
 
 ```bash
@@ -40,34 +27,181 @@ $ npm run start
 
 # watch mode
 $ npm run start:dev
-
-# production mode
-$ npm run start:prod
 ```
 
-## Test
+## Table of Contents
 
-```bash
-# unit tests
-$ npm run test
+1. [Installation](#installation)
+2. [Endpoints](#endpoints)
+   - [Signup](#signup)
+   - [Activate Account](#activate-account)
+   - [Send Back Mail Confirmation](#send-back-mail-confirmation)
+   - [Sign In](#sign-in)
+   - [Get User](#get-user)
+   - [Sign Out](#sign-out)
+   - [Forgot Password](#forgot-password)
+   - [Reset Password](#reset-password)
 
-# e2e tests
-$ npm run test:e2e
+## Installation
+- **nodemailer / @nestjs-modules/mailer:** Provides mail sending capabilities for sending activation and password reset emails.
+- **@nestjs/jwt:** Handles JSON Web Token (JWT) creation and verification for user authentication.
+- **@nestjs/passport:** Passport module for authentication in NestJS applications.
+- **bcrypt:** Library for hashing passwords securely.
+- **prisma / @prisma/client:** Prisma client for database interaction.
+- **passport-google-oauth20:** Google OAuth2.0 authentication strategy for Passport.
+- **cookie-parser:** Middleware for parsing cookies in Express.
+- **class-validator:** Validation library for TypeScript and JavaScript.
+- **class-transformer:** Library for transforming plain to class instances and vice versa.
+- **uuid:** Library for generating UUIDs.
 
-# test coverage
-$ npm run test:cov
+
+
+## Endpoints
+
+### Signup
+
+**Endpoint:** `POST /auth/signup`
+
+**Description:**
+Creates a new user account. Checks if the user already exists, hashes the password, generates an activation token, and sends an activation email.
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "name": "John Doe",
+  "password": "securePassword"
+}
+``` 
+
+**Response:**
+```json
+{
+    "message": "User created. Activation email sent."
+}
 ```
 
-## Support
+### Activate Account
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+**Endpoint:** `POST /auth/activate/:token`
 
-## Stay in touch
+**Description:**
+Activates a user account using the activation token sent via email. Handles token expiration and invalid token scenarios.
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+**Response:**
+```json
+{
+   "message": "Account activated successfully."
 
-## License
+}
+```
+### Send Back Mail Confirmation
 
-Nest is [MIT licensed](LICENSE).
+**Endpoint:** `POST /auth/sendBackMailConfirmation`
+
+**Description:**
+Re-sends the activation email to the user for account confirmation.
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Activation email sent successfully."
+}
+```
+
+### Sign In
+
+**Endpoint:** `POST /auth/signin`
+
+**Description:**
+Handles user login. Validates credentials, checks account activation status, and returns a JWT token.
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword"
+
+}
+```
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+### Get User
+
+**Endpoint:** `POST /auth/user`
+
+**Description:**
+Verifies the JWT token and returns user information if authenticated.
+
+**Response:**
+```json
+{
+  "message": "Hello Mayssa, you are logged in."
+}
+```
+### Sign Out
+
+**Endpoint:** `POST /auth/signout`
+
+**Description:**
+Clears the authentication token and logs the user out.
+
+
+**Response:**
+```json
+{
+  "message": "Logged out successfully."
+}
+```
+
+### Forgot Password
+
+**Endpoint:** `POST /auth/forgotPassword`
+
+**Description:**
+Sends a reset password email to the user.
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+**Response:**
+```json
+{
+  "message": "Mail sent successfully."
+}
+```
+
+### Reset Password
+
+**Endpoint:** `POST /auth/resetPassword/:token`
+
+**Description:**
+Resets the user's password using the provided token.
+
+**Request:**
+```json
+{
+  "password": "newSecurePassword"
+}
+```
+**Response:**
+```json
+{
+  "message": "Your password has been reset successfully."
+}
+```
+

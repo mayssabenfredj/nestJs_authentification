@@ -1,68 +1,35 @@
-# Authentication Service Documentation
+# Authentication Module Documentation
 
 ## Overview
 
-The Authentication Service is responsible for handling user authentication, account activation, Google authentication, and password-related functionalities in a NestJS application.
+The Authentication Module is responsible for handling user authentication, account activation, Google authentication, and password-related functionalities in a NestJS application.
 
 ## Table of Contents
 
-1. [Dependencies](#dependencies)
-2. [Modules](#modules)
-   - [AuthModule](#authmodule)
-3. [Controllers](#controllers)
-   - [AuthController](#authcontroller)
-4. [Services](#services)
-   - [AuthService](#authservice)
-5. [Endpoints](#endpoints)
+1. [Installation](#installation)
+2. [Endpoints](#endpoints)
    - [Signup](#signup)
    - [Activate Account](#activate-account)
    - [Send Back Mail Confirmation](#send-back-mail-confirmation)
-   - [Google Authentication](#google-authentication)
    - [Sign In](#sign-in)
    - [Get User](#get-user)
    - [Sign Out](#sign-out)
    - [Forgot Password](#forgot-password)
    - [Reset Password](#reset-password)
 
-## Dependencies
+## Installation
+- **nodemailer / @nestjs-modules/mailer:** Provides mail sending capabilities for sending activation and password reset emails.
+- **@nestjs/jwt:** Handles JSON Web Token (JWT) creation and verification for user authentication.
+- **@nestjs/passport:** Passport module for authentication in NestJS applications.
+- **bcrypt:** Library for hashing passwords securely.
+- **prisma / @prisma/client:** Prisma client for database interaction.
+- **passport-google-oauth20:** Google OAuth2.0 authentication strategy for Passport.
+- **cookie-parser:** Middleware for parsing cookies in Express.
+- **class-validator:** Validation library for TypeScript and JavaScript.
+- **class-transformer:** Library for transforming plain to class instances and vice versa.
+- **uuid:** Library for generating UUIDs.
 
-- **PrismaService**: Database service for interacting with the underlying database.
-- **JwtService**: Service for handling JSON Web Tokens (JWT) creation and verification.
-- **MailerService**: Service for sending email notifications.
 
-## Modules
-
-### AuthModule
-
-**Description:**
-The AuthModule encapsulates the authentication-related components, including controllers, services, and any required modules.
-
-**Dependencies:**
-- JwtModule: Handles JSON Web Token creation and verification.
-- AuthController: Handles incoming HTTP requests related to authentication.
-- AuthService: Implements the business logic for authentication.
-
-## Controllers
-
-### AuthController
-
-**Description:**
-The AuthController handles incoming HTTP requests related to user authentication, account activation, Google authentication, and password-related functionalities.
-
-**Dependencies:**
-- AuthService: Injects the AuthService to delegate business logic.
-
-## Services
-
-### AuthService
-
-**Description:**
-The AuthService contains the business logic for user authentication, account activation, Google authentication, and password-related functionalities.
-
-**Dependencies:**
-- PrismaService: Manages interactions with the database.
-- JwtService: Handles JSON Web Token creation and verification.
-- MailerService: Sends email notifications.
 
 ## Endpoints
 
@@ -80,3 +47,136 @@ Creates a new user account. Checks if the user already exists, hashes the passwo
   "name": "John Doe",
   "password": "securePassword"
 }
+``` 
+
+**Response:**
+```json
+{
+    "message": "User created. Activation email sent."
+}
+```
+
+### Activate Account
+
+**Endpoint:** `POST /auth/activate/:token`
+
+**Description:**
+Activates a user account using the activation token sent via email. Handles token expiration and invalid token scenarios.
+
+**Response:**
+```json
+{
+   "message": "Account activated successfully."
+
+}
+```
+### Send Back Mail Confirmation
+
+**Endpoint:** `POST /auth/sendBackMailConfirmation`
+
+**Description:**
+Re-sends the activation email to the user for account confirmation.
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Activation email sent successfully."
+}
+```
+
+### Sign In
+
+**Endpoint:** `POST /auth/signin`
+
+**Description:**
+Handles user login. Validates credentials, checks account activation status, and returns a JWT token.
+
+**Request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword"
+
+}
+```
+**Response:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+### Get User
+
+**Endpoint:** `POST /auth/user`
+
+**Description:**
+Verifies the JWT token and returns user information if authenticated.
+
+**Response:**
+```json
+{
+  "message": "Hello Mayssa, you are logged in."
+}
+```
+### Sign Out
+
+**Endpoint:** `POST /auth/signout`
+
+**Description:**
+Clears the authentication token and logs the user out.
+
+
+**Response:**
+```json
+{
+  "message": "Logged out successfully."
+}
+```
+
+### Forgot Password
+
+**Endpoint:** `POST /auth/forgotPassword`
+
+**Description:**
+Sends a reset password email to the user.
+
+**Request:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+**Response:**
+```json
+{
+  "message": "Mail sent successfully."
+}
+```
+
+### Reset Password
+
+**Endpoint:** `POST /auth/resetPassword/:token`
+
+**Description:**
+Resets the user's password using the provided token.
+
+**Request:**
+```json
+{
+  "password": "newSecurePassword"
+}
+```
+**Response:**
+```json
+{
+  "message": "Your password has been reset successfully."
+}
+```
+

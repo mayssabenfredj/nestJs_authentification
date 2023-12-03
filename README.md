@@ -3,6 +3,25 @@
 ## Overview
 
 The Authentication Module is responsible for handling user authentication, account activation, Google authentication, and password-related functionalities in a NestJS application.
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
+</p>
+
+## Installation
+
+```bash
+$ npm install
+```
+
+## Running the app
+
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+```
 
 ## Table of Contents
 
